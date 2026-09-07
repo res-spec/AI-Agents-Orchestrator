@@ -11,13 +11,15 @@ A one-finger hybrid-casual sorting puzzle prototype designed for fast mobile ses
 5. The player loses if the staging belt fills before a triple forms.
 6. Clear every crystal to complete the level.
 
-## Prototype features
+## Validation-build features
 
 - Responsive mobile-first layout
-- Procedural seeded levels
-- Persistent unlocked level using `localStorage`
+- Deterministic 20-level campaign with a guaranteed solution path
+- Versioned local progress, stars, coins, and settings
 - Combo + score system
-- Three lightweight tools: Undo, Hint, Shuffle
+- Three lightweight tools: Undo, Hint, +1 Slot
+- Haptics, reduced-motion setting, installable/offline PWA shell
+- A dependency-free game engine with Node tests
 - Web Audio generated sound effects (no external/licensed audio assets)
 - Win/fail feedback and star grading
 - Original visual language and IP-safe theme
@@ -43,6 +45,14 @@ Do not invest in a large content pipeline until small-user testing shows:
 - low confusion in the first session,
 - and a clear creative hook that can be shown in a 10–15 second ad.
 
+## Run and test
+
+```bash
+cd portal-flow
+npm test
+npm run serve
+```
+
 ## Technical direction
 
-Keep the web prototype for rapid mechanic iteration. If the mechanic validates, move to a mobile production shell using **Capacitor** first rather than rewriting immediately in Flutter. This keeps the validated JavaScript game logic intact and allows Android/iOS packaging, haptics, ads and IAP integrations with less rewrite risk. A Flutter/Flame rewrite only becomes worthwhile if the game evolves into heavier animation, physics, large scene management or performance-sensitive systems.
+Keep this web build for mechanic validation. If the human test gate passes, wrap it with **Capacitor** for Android/iOS device QA. Do not add ads, analytics, IAP, or store credentials until providers and privacy requirements are approved.
