@@ -69,7 +69,7 @@ class InvestmentMemo(BaseModel):
     scores: ScoreCard
     evidence: list[EvidenceItem]
     committee_score: float
-    model_opinion: Literal["BUY", "WATCH", "PASS"]
+    committee_view: Literal["PROCEED", "WATCH", "PASS"]
     human_decision: HumanDecision | None = None
     created_at: datetime = Field(default_factory=utc_now)
     decided_at: datetime | None = None
