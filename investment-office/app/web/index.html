@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Private Investment Office</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,sans-serif;color:#f4f5f7;background:#0b0d10}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 15% 0,#17202b 0,#0b0d10 42%);min-height:100vh}
+    main{max-width:1040px;margin:auto;padding:34px 20px 70px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:28px}
+    h1{font-size:32px;margin:0 0 7px;letter-spacing:-.04em}.muted{color:#8993a1}.pill{border:1px solid #26303b;background:#121820;border-radius:999px;padding:9px 13px;font-size:13px}
+    .grid{display:grid;grid-template-columns:2fr 1fr;gap:18px}.panel{border:1px solid #222a33;background:rgba(17,21,27,.88);border-radius:18px;padding:18px;box-shadow:0 22px 60px #0005}
+    .memo{border:1px solid #29323d;border-radius:15px;padding:16px;margin-top:12px;background:#0e1217}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.symbol{font-weight:800;font-size:22px}.score{font-size:26px;font-weight:800}.tag{font-size:12px;padding:5px 8px;border-radius:8px;background:#1b2530;color:#bcd0e8}
+    .bars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}.metric{background:#151b22;border-radius:10px;padding:9px}.metric b{display:block;font-size:17px}.metric span{font-size:11px;color:#8993a1}
+    .copy{font-size:14px;line-height:1.55;color:#c7ced7}.bear{border-left:3px solid #754c4c;padding-left:10px}.actions{display:flex;gap:8px;margin-top:15px}.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}.approve{background:#d8f36b;color:#111}.pass{background:#252c35;color:#d9dde3}.btn:disabled{opacity:.45;cursor:not-allowed}
+    .empty{padding:35px 0;text-align:center;color:#738091}.position{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222a33}.position:last-child{border:0}
+    @media(max-width:780px){.grid{grid-template-columns:1fr}.top{flex-direction:column}.bars{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="top"><div><h1>Private Investment Office</h1><div class="muted">Araştırır. Tartışır. Son kararı sana bırakır.</div></div><div class="pill" id="mode">Bağlanıyor…</div></div>
+  <div class="grid">
+    <section class="panel"><div class="row"><h2 style="margin:0">Investment Committee</h2><span class="muted" id="count"></span></div><div id="memos" class="empty">Henüz yatırım dosyası yok.</div></section>
+    <aside class="panel"><h2 style="margin-top:0">Portföy</h2><div id="portfolio" class="empty">Pozisyon yok.</div></aside>
+  </div>
+</main>
+<script>
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+async function decide(id,decision){
+  await fetch(`/api/memos/${id}/decision`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({decision})});
+  await load();
+}
+function memoCard(m){
+ const s=m.scores; const decided=m.human_decision;
+ return `<article class="memo"><div class="row"><div><span class="symbol">${esc(m.symbol)}</span> <span class="tag">${esc(m.market)}</span> <span class="tag">${esc(m.proposed_action)}</span></div><div><span class="score">${m.committee_score}</span><span class="muted">/100</span></div></div>
+ <div class="bars"><div class="metric"><b>${s.smart_money}</b><span>SMART MONEY</span></div><div class="metric"><b>${s.fundamentals}</b><span>FUNDAMENTALS</span></div><div class="metric"><b>${s.catalyst}</b><span>CATALYST</span></div><div class="metric"><b>${s.momentum}</b><span>MOMENTUM</span></div><div class="metric"><b>${s.valuation}</b><span>VALUATION</span></div><div class="metric"><b>${s.risk_quality}</b><span>RISK QUALITY</span></div></div>
+ <div class="copy"><b>Tez</b><br>${esc(m.thesis)}</div><div class="copy bear" style="margin-top:10px"><b>Bear case</b><br>${esc(m.bear_case)}</div>
+ <div class="actions"><button class="btn approve" ${decided?'disabled':''} onclick="decide('${m.id}','APPROVE')">${m.proposed_action==='BUY'?'AL':'SAT'}</button><button class="btn pass" ${decided?'disabled':''} onclick="decide('${m.id}','PASS')">PAS GEÇ</button><span class="tag">Committee: ${esc(m.committee_view)}</span>${decided?`<span class="tag">Sen: ${esc(decided)}</span>`:''}</div></article>`;
+}
+async function load(){
+ const [health,memos,positions]=await Promise.all([fetch('/health').then(r=>r.json()),fetch('/api/memos').then(r=>r.json()),fetch('/api/portfolio').then(r=>r.json())]);
+ document.getElementById('mode').textContent=`${health.broker_mode.toUpperCase()} · Live ${health.live_trading_enabled?'ON':'OFF'}`;
+ document.getElementById('count').textContent=`${memos.length} dosya`;
+ document.getElementById('memos').className=memos.length?'':'empty';
+ document.getElementById('memos').innerHTML=memos.length?memos.map(memoCard).join(''):'Henüz yatırım dosyası yok.';
+ document.getElementById('portfolio').className=positions.length?'':'empty';
+ document.getElementById('portfolio').innerHTML=positions.length?positions.map(p=>`<div class="position"><div><b>${esc(p.symbol)}</b><div class="muted">${p.quantity} adet</div></div><div style="text-align:right"><b>${p.cost_basis_base.toFixed(2)}</b><div class="muted">ort. ${p.average_cost_base.toFixed(2)}</div></div></div>`).join(''):'Pozisyon yok.';
+}
+load();
+</script>
+</body>
+</html>
