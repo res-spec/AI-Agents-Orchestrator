@@ -21,8 +21,10 @@ class Settings(BaseSettings):
     sec_user_agent: str | None = None
 
     ibkr_host: str = "127.0.0.1"
-    ibkr_paper_port: int = 7947
-    ibkr_live_port: int = 7946
+    # Match the socket ports configured in the user's installed TWS.
+    # Their paper TWS currently reports 7497.
+    ibkr_paper_port: int = 7497
+    ibkr_live_port: int = 7496
     ibkr_client_id: int = 17
 
 
