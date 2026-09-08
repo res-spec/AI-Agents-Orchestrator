@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 
 from .broker import build_broker
 from .config import settings
+from .ibkr_connectivity import probe_tws
 from .models import (
     DecisionRequest,
     ExecutedOrder,
@@ -45,6 +46,18 @@ def health() -> dict:
         "live_trading_enabled": settings.enable_live_trading,
         "min_committee_score": settings.min_committee_score,
         "sec_research_configured": bool(settings.sec_user_agent and "replace" not in settings.sec_user_agent.lower()),
+    }
+
+
+@app.get("/api/broker/status")
+def broker_status(live: bool = Query(default=False)) -> dict:
+    """Probe the local TWS/IB Gateway socket without authenticating or trading."""
+    status = probe_tws(settings, live=live)
+    return {
+        **status.as_dict(),
+        "mode": "live" if live else "paper",
+        "client_id": settings.ibkr_client_id,
+        "live_trading_enabled": settings.enable_live_trading,
     }
 
 
