@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
 from .broker import build_broker
 from .config import settings
@@ -26,6 +28,12 @@ app = FastAPI(
 )
 repo = Repository(settings.database_path)
 broker = build_broker(settings.broker_mode, settings.enable_live_trading)
+WEB_INDEX = Path(__file__).parent / "web" / "index.html"
+
+
+@app.get("/", include_in_schema=False)
+def dashboard() -> FileResponse:
+    return FileResponse(WEB_INDEX)
 
 
 @app.get("/health")
