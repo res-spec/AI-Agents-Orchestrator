@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from .broker import build_broker
@@ -16,6 +16,7 @@ from .models import (
     OrderSubmitRequest,
     Position,
 )
+from .research import SECClient
 from .risk import preview_order
 from .scoring import committee_score, committee_view
 from .store import Repository
@@ -43,7 +44,62 @@ def health() -> dict:
         "broker_mode": settings.broker_mode,
         "live_trading_enabled": settings.enable_live_trading,
         "min_committee_score": settings.min_committee_score,
+        "sec_research_configured": bool(settings.sec_user_agent and "replace" not in settings.sec_user_agent.lower()),
     }
+
+
+def _sec() -> SECClient:
+    if not settings.sec_user_agent or "replace" in settings.sec_user_agent.lower():
+        raise HTTPException(
+            status_code=503,
+            detail="SEC research needs SEC_USER_AGENT with an application/contact identifier in .env",
+        )
+    return SECClient(settings.sec_user_agent)
+
+
+@app.get("/api/research/us/{symbol}/filings")
+def us_company_filings(
+    symbol: str,
+    forms: str = Query(default="10-K,10-Q,8-K"),
+    limit: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    client = _sec()
+    try:
+        directory = client.company_directory()
+        company = directory.get(symbol.strip().upper())
+        if not company:
+            raise HTTPException(status_code=404, detail="US ticker not found in SEC company directory")
+        submissions = client.submissions(company.cik)
+        form_set = {item.strip() for item in forms.split(",") if item.strip()}
+        filings = client.recent_filings(submissions, form_set or None)[:limit]
+        return {
+            "ticker": company.ticker,
+            "company": company.title,
+            "cik": company.cik,
+            "filings": filings,
+        }
+    finally:
+        client.close()
+
+
+@app.get("/api/research/sec/entity/{cik}/filings")
+def sec_entity_filings(
+    cik: int,
+    forms: str = Query(default="13F-HR,13F-HR/A"),
+    limit: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    client = _sec()
+    try:
+        submissions = client.submissions(cik)
+        form_set = {item.strip() for item in forms.split(",") if item.strip()}
+        filings = client.recent_filings(submissions, form_set or None)[:limit]
+        return {
+            "name": submissions.get("name"),
+            "cik": cik,
+            "filings": filings,
+        }
+    finally:
+        client.close()
 
 
 @app.post("/api/memos", response_model=InvestmentMemo)
