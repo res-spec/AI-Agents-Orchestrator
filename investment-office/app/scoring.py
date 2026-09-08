@@ -16,9 +16,9 @@ def committee_score(scores: ScoreCard) -> float:
     return round(raw, 2)
 
 
-def model_opinion(score: float, min_buy_score: float) -> str:
-    if score >= min_buy_score:
-        return "BUY"
-    if score >= max(60.0, min_buy_score - 12.0):
+def committee_view(score: float, min_proceed_score: float) -> str:
+    if score >= min_proceed_score:
+        return "PROCEED"
+    if score >= max(60.0, min_proceed_score - 12.0):
         return "WATCH"
     return "PASS"
