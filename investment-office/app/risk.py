@@ -10,8 +10,8 @@ def preview_order(memo: InvestmentMemo, request: OrderPreviewRequest, settings: 
     if memo.human_decision is None or memo.human_decision.value != "APPROVE":
         reasons.append("Investment memo has not been explicitly approved by the owner.")
 
-    if memo.model_opinion == "PASS":
-        reasons.append("Committee model opinion is PASS; manual approval alone does not bypass the risk gate.")
+    if memo.committee_view == "PASS":
+        reasons.append("Committee view is PASS; manual approval alone does not bypass the risk gate.")
 
     if memo.proposed_action == ProposedAction.BUY:
         room = max(
