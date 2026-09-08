@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     min_committee_score: float = Field(default=72.0, ge=0, le=100)
     allow_fractional: bool = False
 
+    sec_user_agent: str | None = None
+
     ibkr_host: str = "127.0.0.1"
     ibkr_paper_port: int = 7947
     ibkr_live_port: int = 7946
