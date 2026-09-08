@@ -1,0 +1,27 @@
+name: Investment Office Tests
+
+on:
+  pull_request:
+    paths:
+      - 'investment-office/**'
+      - '.github/workflows/investment-office-tests.yml'
+  push:
+    branches:
+      - feat/investment-office-mvp
+    paths:
+      - 'investment-office/**'
+      - '.github/workflows/investment-office-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: investment-office
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: pytest -q
