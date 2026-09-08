@@ -1,7 +1,7 @@
 import math
 
 from .config import Settings
-from .models import InvestmentMemo, OrderPreview, OrderPreviewRequest
+from .models import InvestmentMemo, OrderPreview, OrderPreviewRequest, ProposedAction
 
 
 def preview_order(memo: InvestmentMemo, request: OrderPreviewRequest, settings: Settings) -> OrderPreview:
@@ -13,19 +13,22 @@ def preview_order(memo: InvestmentMemo, request: OrderPreviewRequest, settings: 
     if memo.model_opinion == "PASS":
         reasons.append("Committee model opinion is PASS; manual approval alone does not bypass the risk gate.")
 
-    max_by_portfolio = max(
-        0.0,
-        request.portfolio_equity_base * settings.max_position_pct - request.current_position_value_base,
-    )
-    max_allowed = min(settings.max_single_order_base, max_by_portfolio)
-
-    if request.requested_notional_base is None:
-        desired = max_allowed
+    if memo.proposed_action == ProposedAction.BUY:
+        room = max(
+            0.0,
+            request.portfolio_equity_base * settings.max_position_pct - request.current_position_value_base,
+        )
+        max_allowed = min(settings.max_single_order_base, room)
+        if max_allowed <= 0:
+            reasons.append("Position cap leaves no room for an additional buy order.")
     else:
-        desired = min(request.requested_notional_base, max_allowed)
+        max_allowed = min(settings.max_single_order_base, request.current_position_value_base)
+        if request.current_position_value_base <= 0:
+            reasons.append("There is no recorded position available to sell.")
 
-    if max_allowed <= 0:
-        reasons.append("Position cap leaves no room for an additional order.")
+    desired = max_allowed
+    if request.requested_notional_base is not None:
+        desired = min(request.requested_notional_base, max_allowed)
 
     if settings.allow_fractional:
         quantity = desired / request.price_base if desired > 0 else 0.0
