@@ -1,0 +1,1 @@
+{"name":"portal-flow","private":true,"type":"module","scripts":{"test":"node --test game-engine.test.mjs","serve":"python3 -m http.server 4173"}}
